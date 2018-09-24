@@ -102,3 +102,11 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# Nodejs
+node_modules/
+
+# other
+*.pyc
+*.swo
+*.swp
