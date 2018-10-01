@@ -1,35 +1,31 @@
 #!/usr/bin/env python
 
-import pytest
+import unittest
 from app.doubly_linked_list import Node, DoublyLinkedList
 
-class TestDoublyLinkedList:
 
-    def setup(self):
+class TestDoublyLinkedList(unittest.TestCase):
+
+    def setUp(self):
         self.data = 1
+        self.count = 1
         self.dll = DoublyLinkedList(Node(self.data))
 
     def test_size(self):
-        self.setup()
-
-        assert self.dll.size() == 1
+        self.assertEqual(self.dll.size(), self.count)
 
     def test_get(self):
-        self.setup()
-
-        assert self.dll.get(0) == self.data
+        self.assertEqual(self.dll.get(self.count - 1), self.data)
 
     def test_add(self):
-        self.setup()
-
-        assert self.dll.add(self.data) == True
+        self.assertTrue(self.dll.add(self.data))
 
     def test_remove(self):
-        self.setup()
-
-        assert self.dll.remove(self.data) == True
+        self.assertTrue(self.dll.remove(self.data))
 
     def test_pop(self):
-        self.setup()
+        self.assertEqual(self.dll.pop(), self.data)
 
-        assert self.dll.pop() == self.data
+
+if __name__ == "__main__":
+    unittest.main()

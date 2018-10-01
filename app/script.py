@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 
 """
-Hello world script.
+Simple flask spplication
 """
 
+from flask import Flask
+app = Flask(__name__)
 
+
+@app.route('/')
 def hello_world():
 	"""
-	Print the simple phrase: Hello world!
+	Print "Hello, world!" in browser.
 	"""
-	print("Hello world!")
-
-
-if __name__ == "__main__":
-	hello_world()
+	return "Hello, World!"
