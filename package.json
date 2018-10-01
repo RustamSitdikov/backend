@@ -1,0 +1,22 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "Technotrack's backend",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RustamSitdikov/backend.git"
+  },
+  "author": "Rustam Sitdikov",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/RustamSitdikov/backend/issues"
+  },
+  "homepage": "https://github.com/RustamSitdikov/backend#readme"
+}
