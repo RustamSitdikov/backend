@@ -1,0 +1,18 @@
+HTTP/1.1 302 Moved Temporarily
+Server: nginx/1.10.3
+Date: Sun, 14 Oct 2018 12:49:47 GMT
+Content-Type: text/html
+Content-Length: 161
+Connection: keep-alive
+Location: https://mail.ru/robots.txt
+X-XSS-Protection: 1; mode=block; report=https://cspreport.mail.ru/xxssprotection
+X-Content-Type-Options: nosniff
+
+<html>
+<head><title>302 Found</title></head>
+<body bgcolor="white">
+<center><h1>302 Found</h1></center>
+<hr><center>nginx/1.10.3</center>
+</body>
+</html>
+
