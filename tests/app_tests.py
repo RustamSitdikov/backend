@@ -7,14 +7,14 @@ class AppTest(unittest.TestCase):
         self.app = app.test_client()
 
     def test_index(self):
-        rv = self.app.get('/')
+        rv = self.app.get('/chats/')
         self.assertEqual(200, rv.status_code)
         self.assertEqual(b'Hello, world!', rv.data)
         self.assertEqual('text/html', rv.mimetype)
 
-    def test_form(self):
-        rv = self.app.post('/form/', data=dict(first_name='1', last_name='2'))
-        self.assertEqual("", rv.data)
+    # def test_form(self):
+    #     rv = self.app.post('/form/', data=dict(first_name='1', last_name='2'))
+    #     self.assertEqual("", rv.data)
 
     def tearDown(self):
         pass

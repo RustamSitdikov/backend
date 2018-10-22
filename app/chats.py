@@ -10,12 +10,19 @@ chats = Blueprint('chats', __name__, url_prefix='/chats')
 
 @chats.route('/', methods=['GET'])
 def get_chats():
-    return jsonify(chats='chats')
+    chats = dict(chats=["Chat1", "Chat2", "Chat3"])
+    return jsonify(chats=chats)
 
 
 @chats.route('/<string:chatname>/', methods=['GET'])
 def get_chat(chatname=None):
     return jsonify(chatname=chatname)
+
+
+@chats.route('/search/', methods=['GET'])
+def search_chats():
+    chats = dict(chats=["Chat1", "Chat2", "Chat3"])
+    return jsonify(chats=chats)
 
 
 @chats.route('/create/', methods=['GET', 'POST'])
