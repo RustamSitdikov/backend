@@ -6,7 +6,6 @@ from werkzeug.utils import secure_filename
 import os
 
 
-@app.route('/<string:name>/')
 @app.route('/')
-def index(name='world'):
-    return "Hello, {}!".format(name)
+def index():
+    return 'OK'

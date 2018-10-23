@@ -1,42 +1,61 @@
 #!/usr/bin/env python
 import os
 
-from flask import (Blueprint, request, jsonify, render_template, send_from_directory, flash, redirect, url_for)
+from flask import (Blueprint, request, jsonify, render_template, send_from_directory, flash, redirect, url_for, abort)
 from flask import current_app as app
 from werkzeug.utils import secure_filename
 
 chats = Blueprint('chats', __name__, url_prefix='/chats')
 
 
-@chats.route('/', methods=['GET'])
+@chats.route('/list/', methods=['GET'])
 def get_chats():
-    chats = dict(chats=["Chat1", "Chat2", "Chat3"])
-    return jsonify(chats=chats)
-
-
-@chats.route('/<string:chatname>/', methods=['GET'])
-def get_chat(chatname=None):
-    return jsonify(chatname=chatname)
+    return jsonify({"chats": ["Chat1", "Chat2", "Chat3"]})
 
 
 @chats.route('/search/', methods=['GET'])
-def search_chats():
+@chats.route('/search/<string:query>/', methods=['GET'])
+@chats.route('/search/<string:query>/<int:limit>', methods=['GET'])
+def search_chats(query=None, limit=None):
     chats = dict(chats=["Chat1", "Chat2", "Chat3"])
     return jsonify(chats=chats)
 
 
 @chats.route('/create/', methods=['GET', 'POST'])
-def create_chat():
+@chats.route('/create/<string:chatname>', methods=['GET', 'POST'])
+def create_chat(chatname=None):
     if request.method == 'POST':
         return jsonify(request.form)
     return render_template('chats/create.html')
+
+
+@chats.route('/leave/<int:chat_id>', methods=['GET'])
+def leave_chat(chat_id=None):
+    return jsonify()
+
+
+@chats.route('/invite/<int:chat_id>', methods=['POST'])
+def invite_to_chat(chat_id=None):
+    return jsonify()
+
+
+@chats.route('/send/<int:chat_id>', methods=['POST'])
+@chats.route('/send/<int:chat_id>/<string:content>', methods=['POST'])
+@chats.route('/send/<int:chat_id>/<string:content>/<int:attach_id>', methods=['POST'])
+def send_message_to_chat(chat_id=None, content=None, attach_id=None):
+    return jsonify()
+
+
+@chats.route('/read/<int:message_id>', methods=['GET'])
+def read_message_from_chat(message_id=None):
+    return jsonify()
 
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
 
-@chats.route('/uploaded/<filename>')
+@chats.route('/uploaded/<string:filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
