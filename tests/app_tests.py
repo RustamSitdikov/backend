@@ -9,14 +9,8 @@ class AppTest(unittest.TestCase):
         self.app = app.test_client()
 
     def test_index(self):
-        rv = self.app.get('/')
-        self.assertEqual(200, rv.status_code)
-        self.assertEqual(b'Index', rv.data)
-        self.assertEqual('text/html', rv.mimetype)
-
-        index = "index"
-        rv = self.app.post('/', data=dict(index=index))
-        self.assertEqual(405, rv.status_code)
+        rv = self.app.post('/api/', data=dict(jsonrpc='2.0', method='index', params=[], id='1'))
+        print(rv)
 
     def test_login(self):
         rv = self.app.get('/login/')
@@ -33,15 +27,8 @@ class AppTest(unittest.TestCase):
         self.assertEqual('application/json', rv.mimetype)
 
     def test_search_users(self):
-        rv = self.app.get('/search_users?query={}&limit={}'.format("something", 1))
-        data = json.loads(rv.get_data(as_text=True))
-        self.assertEqual(data['users'], ["User1", "User2", "User3"])
-        self.assertEqual(200, rv.status_code)
-        self.assertEqual('application/json', rv.mimetype)
-
-        users = "users"
-        rv = self.app.post('/search_users', data=dict(users=users))
-        self.assertEqual(405, rv.status_code)
+        rv = self.app.post('/api/', data=dict(jsonrpc='2.0', method='search_users', params=[], id=1))
+        self.assertEqual('', rv.data)
 
     def test_search_chats(self):
         rv = self.app.get('/search_chats?query={}&limit={}'.format("something", 1))

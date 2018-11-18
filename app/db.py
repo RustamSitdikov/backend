@@ -1,18 +1,39 @@
-import flask
 import psycopg2
-import config
+import psycopg2.extras
+from contextlib import contextmanager
+from config import Config
 
+
+@contextmanager
 def get_connection():
-    if not hasattr(flask.g, 'dbconn'):
-        flask.g.dbconn = psycopg2.connect(database=config.DB_NAME, host=config.DB_HOST,
-            user=config.DB_USER, password=config.DB_PASS)
-        return flask.g.dbconn
+    connection = psycopg2.connect(
+        database=Config.DATABASE_NAME, host=Config.DATABASE_HOST,
+        user=Config.DATABASE_USER, password=Config.DATABASE_PASSWORD
+    )
+    try:
+        yield connection
+    except Exception:
+        connection.rollback()
+        raise
+    else:
+        connection.commit()
+    finally:
+        pass
+        # connection.close()
+
 
 def get_cursor():
-    return get_connection().cursor(cursor_factory=psycopg2.extras.DictCursor)
+    with get_connection() as connection:
+        return connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
 
 def query_one(sql, **params):
     with get_cursor() as cursor:
         cursor.execute(sql, params)
-        return dict(cursor.fetchone())
+        return cursor.fetchone()
 
+
+def query_all(sql, **params):
+    with get_cursor() as cursor:
+        cursor.execute(sql, params)
+        return cursor.fetchall()
