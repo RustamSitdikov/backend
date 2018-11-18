@@ -2,6 +2,7 @@
 
 from flask import Flask
 from flask_jsonrpc import JSONRPC
+from config import Config
 
 import boto3
 
@@ -9,8 +10,9 @@ import boto3
 app = Flask(__name__, instance_relative_config=True)
 jsonrpc = JSONRPC(app, '/api/')
 
-# s3_session = boto3.session.Session()
-# s3_client = s3_session.client()
+s3_session = boto3.session.Session()
+s3_client = s3_session.client(service_name=Config.S3_SERVICE_NAME, endpoint_url=Config.S3_ENDPOINT_URL,
+                              aws_access_key_id=Config.S3_ACCESS_KEY_ID, aws_secret_access_key=Config.S3_SECRET_ACCESS_KEY)
 
 # Load the default configuration
 app.config.from_object('config.DevelopmentConfig')

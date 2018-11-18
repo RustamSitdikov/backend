@@ -1,5 +1,5 @@
 from app import db
-from .utils import get_type_from_url
+from .utils import get_mime_type
 from config import Config
 
 LIMIT = 10
@@ -197,21 +197,21 @@ def get_attachment(attachment_id):
     return db.query_one(
         """
         SELECT attachment_id as attachment_id, user_id as user_id, chat_id as chat_id,
-        message_id as message_id, type as type, url as url
+        message_id as message_id, mime_type as mime_type, url as url
         FROM attachments
         WHERE attachment_id = %(attachment_id)s
         """, attachment_id=int(attachment_id)
     )
 
 
-def create_attachment(user_id, chat_id, message_id, url, type):
+def create_attachment(user_id, chat_id, message_id, url, mime_type):
     attachment_id = db.query_one(
         """
-        INSERT INTO attachments (user_id, chat_id, message_id, type, url)
-        VALUES (%(user_id)s, %(chat_id)s, %(message_id)s, %(type)s, %(url)s)
+        INSERT INTO attachments (user_id, chat_id, message_id, mime_type, url)
+        VALUES (%(user_id)s, %(chat_id)s, %(message_id)s, %(mime_type)s, %(url)s)
         RETURNING attachment_id;
         """, user_id=int(user_id), chat_id=int(chat_id), message_id=int(message_id),
-        type=str(type), url=str(url)
+        mime_type=str(mime_type), url=str(url)
     )
     return attachment_id
 
@@ -228,7 +228,7 @@ def upload_file(chat_id, content):
     user_id = member['user_id']
     message_id = create_message(user_id=user_id, chat_id=chat_id, content=content)
     url = save_file(filename=message_id, content=content)
-    type = get_type_from_url(url)
+    mime_type = get_mime_type(url)
     attachment_id = create_attachment(user_id=user_id, chat_id=chat_id,
-                                      message_id=message_id, url=url, type=type)
+                                      message_id=message_id, url=url, mime_type=mime_type)
     return attachment_id
