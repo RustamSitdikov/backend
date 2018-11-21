@@ -40,6 +40,6 @@ CREATE TABLE IF NOT EXISTS attachments (
     user_id INTEGER NOT NULL REFERENCES users(user_id),
     chat_id INTEGER NOT NULL REFERENCES chats(chat_id),
     message_id INTEGER NOT NULL REFERENCES messages(message_id),
-    mime_type TEXT NOT NULL CONSTRAINT attachment_type_check CHECK (length(mime_type) < 16),
+    mime_type TEXT NOT NULL CONSTRAINT attachment_type_check CHECK (length(mime_type    ) < 16),
     url TEXT NOT NULL CONSTRAINT attachment_url_check CHECK (length(url) < 64)
 );

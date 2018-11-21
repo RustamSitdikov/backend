@@ -1,5 +1,7 @@
 import json
 import unittest
+import testing.postgresql
+import psycopg2
 
 from app import app
 
@@ -7,6 +9,10 @@ from app import app
 class AppTest(unittest.TestCase):
     def setUp(self):
         self.app = app.test_client()
+        self.postgresql = testing.postgresql.Postgresql()
+
+    def tearDown(self):
+        self.postgresql.stop()
 
     def test_index(self):
         rv = self.app.post('/api/', data=dict(jsonrpc='2.0', method='index', params=[], id='1'))
@@ -152,9 +158,6 @@ class AppTest(unittest.TestCase):
         self.assertEqual(data["attach"], attach)
         self.assertEqual(200, rv.status_code)
         self.assertEqual('application/json', rv.mimetype)
-
-    def tearDown(self):
-        pass
 
 
 if __name__ == "__main__":

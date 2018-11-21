@@ -1,11 +1,11 @@
 from app import db
+from .db import transaction
 from .utils import get_mime_type
 from config import Config
 
 LIMIT = 10
 FALSE = 'FALSE'
 TRUE = 'TRUE'
-DEFAULT = 'DEFAULT'
 
 
 # User
@@ -54,11 +54,26 @@ def get_chat(chat_id):
 
 
 def get_personal_chat(user_id):
-    pass
+    return db.query_one(
+        """
+        SELECT chats.chat_id as chat_id, chats.topic as topic, chats.is_group_chat as is_group_chat, chats.last_message as last_message
+        FROM chats, members
+        WHERE chats.chat_id = members.chat_id
+        AND members.user_id = %(user_id)s
+        AND chats.is_group_chat = FALSE
+        """, user_id=int(user_id)
+    )
 
 
 def get_group_chat(topic):
-    pass
+    return db.query_one(
+        """
+        SELECT chat_id as chat_id, topic as topic, is_group_chat as is_group_chat, last_message as last_message
+        FROM chats
+        WHERE topic = %(topic)s
+        AND is_group_chat = TRUE
+        """, topic=str(topic)
+    )
 
 
 def search_chats(query, limit):
@@ -83,16 +98,17 @@ def list_chats():
     )
 
 
-def create_chat(is_group_chat, topic, last_message=DEFAULT):
+def create_chat(is_group_chat, topic):
     return db.query_one(
         """
-        INSERT INTO chats (is_group_chat, topic, last_message)
-        VALUES (%(is_group_chat)s, %(topic)s, %(last_message)s)
+        INSERT INTO chats (is_group_chat, topic)
+        VALUES (%(is_group_chat)s, %(topic)s)
         RETURNING chat_id
-        """, is_group_chat=bool(is_group_chat), topic=str(topic), last_message=str(last_message)
+        """, is_group_chat=bool(is_group_chat), topic=str(topic)
     )
 
 
+@transaction
 def create_personal_chat(user_id):
     topic = get_user(user_id=user_id)['nick']
     chat_id = create_chat(is_group_chat=FALSE, topic=topic)
@@ -101,16 +117,19 @@ def create_personal_chat(user_id):
     return chat
 
 
+@transaction
 def create_group_chat(topic):
-    chat_id = create_chat(is_group_chat=FALSE, topic=topic)
+    chat_id = create_chat(is_group_chat=TRUE, topic=topic)
     chat = get_chat(chat_id=chat_id)
     return chat
 
 
+@transaction
 def add_members_to_group_chat(chat_id, user_ids):
     pass
 
 
+@transaction
 def leave_group_chat(chat_id):
     pass
 
@@ -151,48 +170,40 @@ def list_messages(chat_id, limit):
         """, chat_id=int(chat_id), limit=int(limit))
 
 
-def send_message(chat_id, content, attachment_id):
+@transaction
+def send_message(chat_id, content, attachment_id=None):
     pass
 
 
+@transaction
 def read_message(message_id):
-    pass
+    message = get_message(message_id)
 
 
 # Member
-def get_member(user_id=None, chat_id=None):
-    if user_id is not None:
-        return db.query_one(
-            """
-            SELECT user_id as user_id, chat_id as chat_id, 
-            new_messages as new_messages, last_read_message_id as last_read_message_id
-            FROM members
-            WHERE user_id = %(user_id)s
-            """, user_id=int(user_id)
-        )
-    elif chat_id is not None:
-        return db.query_one(
-            """
-            SELECT user_id as user_id, chat_id as chat_id, 
-            new_messages as new_messages, last_read_message_id as last_read_message_id
-            FROM members
-            WHERE chat_id = %(chat_id)s
-            """, chat_id=int(chat_id)
-        )
-
-
-def create_member(user_id, chat_id, last_read_message_id=DEFAULT, new_messages=DEFAULT):
+def get_member(user_id, chat_id):
     return db.query_one(
         """
-        INSERT INTO members (user_id, chat_id, new_messages, last_read_message_id)
-        VALUES (%(user_id)s, %(chat_id)s, %(new_messages)s, %(last_read_message_id)s)
-        RETURNING member_id;
-        """, user_id=int(user_id), chat_id=int(chat_id), new_messages=int(new_messages),
-        last_read_message_id=int(last_read_message_id)
+        SELECT user_id as user_id, chat_id as chat_id, 
+        new_messages as new_messages, last_read_message_id as last_read_message_id
+        FROM members
+        WHERE user_id = %(user_id)s
+        AND chat_id = %(chat_id)s
+        """, user_id=int(user_id), chat_id=int(chat_id)
     )
 
 
-# Attachment #
+def create_member(user_id, chat_id):
+    return db.query_one(
+        """
+        INSERT INTO members (user_id, chat_id)
+        VALUES (%(user_id)s, %(chat_id)s)
+        RETURNING member_id;
+        """, user_id=int(user_id), chat_id=int(chat_id)
+    )
+
+
+# Attachment
 def get_attachment(attachment_id):
     return db.query_one(
         """
@@ -204,6 +215,7 @@ def get_attachment(attachment_id):
     )
 
 
+# TODO: протестировать
 def create_attachment(user_id, chat_id, message_id, url, mime_type):
     attachment_id = db.query_one(
         """
@@ -216,6 +228,7 @@ def create_attachment(user_id, chat_id, message_id, url, mime_type):
     return attachment_id
 
 
+# TODO: протестировать
 def save_file(filename, content):
     url = '/'.join([Config.UPLOAD_FOLDER, filename])
     with open(url, 'w') as file:
@@ -223,9 +236,8 @@ def save_file(filename, content):
     return url
 
 
-def upload_file(chat_id, content):
-    member = get_member(chat_id=chat_id)
-    user_id = member['user_id']
+# TODO: протестировать
+def upload_file(user_id, chat_id, content):
     message_id = create_message(user_id=user_id, chat_id=chat_id, content=content)
     url = save_file(filename=message_id, content=content)
     mime_type = get_mime_type(url)
