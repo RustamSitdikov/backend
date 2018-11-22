@@ -66,14 +66,17 @@ def rollback():
 def transaction(func):
     @wraps(func)
     def inner(*args, **kwargs):
+        res = None
         try:
-            func(*args, **kwargs)
-            commit()
+            res = func(*args, **kwargs)
         except Exception as exception:
-            logging.getLogger('sql').error("%s: %s" % (exception.__class__.__name__, exception))
             rollback()
+            logging.getLogger('sql').error("%s: %s" % (exception.__class__.__name__, exception))
+        else:
+            commit()
         finally:
             close()
+        return res
     return inner
 
 
