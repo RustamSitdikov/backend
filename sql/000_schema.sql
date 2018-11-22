@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS members (
     member_id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(user_id),
     chat_id INTEGER NOT NULL references chats(chat_id),
-    new_messages INTEGER NOT NULL DEFAULT 0,
+    new_messages INTEGER DEFAULT 0 NOT NULL,
     last_read_message_id INTEGER DEFAULT NULL REFERENCES messages(message_id)
 );
 
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS attachments (
     attachment_id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(user_id),
     chat_id INTEGER NOT NULL REFERENCES chats(chat_id),
-    message_id INTEGER NOT NULL REFERENCES messages(message_id),
-    mime_type TEXT NOT NULL CONSTRAINT attachment_type_check CHECK (length(mime_type    ) < 16),
+    message_id INTEGER DEFAULT NULL REFERENCES messages(message_id),
+    mime_type TEXT NOT NULL CONSTRAINT attachment_type_check CHECK (length(mime_type) < 16),
     url TEXT NOT NULL CONSTRAINT attachment_url_check CHECK (length(url) < 64)
 );

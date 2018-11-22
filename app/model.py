@@ -1,11 +1,11 @@
+#!/usr/bin/env python
+
 from app import db
 from .db import transaction
 from .utils import get_mime_type
 from config import Config
 
 LIMIT = 10
-FALSE = 'FALSE'
-TRUE = 'TRUE'
 
 
 # User
@@ -109,29 +109,37 @@ def create_chat(is_group_chat, topic):
 
 
 @transaction
-def create_personal_chat(user_id):
-    topic = get_user(user_id=user_id)['nick']
-    chat_id = create_chat(is_group_chat=FALSE, topic=topic)
-    member_id = create_member(user_id=user_id, chat_id=chat_id)
+def create_personal_chat(user_id, companion_id):
+    user_name = get_user(user_id=user_id)['name']
+    companion_name = get_user(user_id=companion_id)['name']
+    topic = '<->'.join([user_name, companion_name])
+    chat_id = create_chat(is_group_chat=False, topic=topic)['chat_id']
+    member_id = create_member(user_id=user_id, chat_id=chat_id)['member_id']
+    member_id = create_member(user_id=companion_id, chat_id=chat_id)['member_id']
     chat = get_chat(chat_id=chat_id)
     return chat
 
 
 @transaction
 def create_group_chat(topic):
-    chat_id = create_chat(is_group_chat=TRUE, topic=topic)
+    chat_id = create_chat(is_group_chat=True, topic=topic)['chat_id']
     chat = get_chat(chat_id=chat_id)
     return chat
 
 
 @transaction
 def add_members_to_group_chat(chat_id, user_ids):
-    pass
+    member_ids = []
+    for user_id in user_ids:
+        member_id = create_member(user_id=user_id, chat_id=chat_id)['member_id']
+        member_ids.append(member_id)
+    return member_ids
 
 
 @transaction
-def leave_group_chat(chat_id):
-    pass
+def leave_group_chat(chat_id, user_id):
+    member_id = delete_member(user_id=user_id, chat_id=chat_id)['member_id']
+    return member_id
 
 
 # Message
@@ -147,14 +155,13 @@ def get_message(message_id):
 
 
 def create_message(user_id, chat_id, content):
-    message_id = db.query_one(
+    return db.query_one(
         """
         INSERT INTO messages (user_id, chat_id, content, added_at)
         VALUES (%(user_id)s, %(chat_id)s, %(content)s, DEFAULT)
-        RETURNING message_id;
+        RETURNING message_id
         """, user_id=int(user_id), chat_id=int(chat_id), content=str(content)
     )
-    return message_id
 
 
 def list_messages(chat_id, limit):
@@ -170,14 +177,80 @@ def list_messages(chat_id, limit):
         """, chat_id=int(chat_id), limit=int(limit))
 
 
-@transaction
-def send_message(chat_id, content, attachment_id=None):
-    pass
+def decrease_message(user_id, chat_id):
+    return db.query_one(
+        """
+        UPDATE members
+        SET new_messages = CASE  
+                                WHEN new_messages > 0 THEN new_messages - 1 
+                                ELSE 0
+                           END 
+        WHERE user_id = %(user_id)s
+        AND chat_id = %(chat_id)s
+        RETURNING member_id 
+        """, user_id=int(user_id), chat_id=int(chat_id)
+    )
+
+
+def increase_message(user_id, chat_id):
+    return db.query_one(
+        """
+        UPDATE members
+        SET new_messages = new_messages + 1
+        WHERE user_id != %(user_id)s
+        AND chat_id = %(chat_id)s
+        RETURNING member_id 
+        """, user_id=int(user_id), chat_id=int(chat_id)
+    )
+
+
+def set_last_message(chat_id, content):
+    return db.query_one(
+        """
+        UPDATE chats
+        SET last_message = %(content)s
+        WHERE chat_id = %(chat_id)s
+        RETURNING last_message
+        """, chat_id=int(chat_id), content=str(content)
+    )
+
+
+def set_last_read_message(member_id, message_id):
+    return db.query_one(
+        """
+        UPDATE members
+        SET last_read_message_id = %(message_id)s
+        WHERE member_id = %(member_id)s
+        RETURNING last_read_message_id
+        """, member_id=int(member_id), message_id=int(message_id)
+    )
 
 
 @transaction
-def read_message(message_id):
+def read_message(user_id, message_id):
     message = get_message(message_id)
+    chat_id = message["chat_id"]
+    member_id = decrease_message(user_id=user_id, chat_id=chat_id)['member_id']
+    last_read_message_id = set_last_read_message(member_id=member_id, message_id=message_id)['last_read_message_id']
+
+    # TODO: decrease id for last_read_message_id in member
+
+    chat = get_chat(chat_id=chat_id)
+    return chat
+
+
+@transaction
+def send_message(user_id, chat_id, content, attachment_id=None):
+    message_id = create_message(user_id=user_id, chat_id=chat_id, content=content)['message_id']
+    member_id = increase_message(user_id=user_id, chat_id=chat_id)['member_id']
+    last_message = set_last_message(chat_id=chat_id, content=content)['last_message']
+
+    # TODO: need to add attachment file
+    if attachment_id is not None:
+        pass
+
+    message = get_message(message_id)
+    return message
 
 
 # Member
@@ -198,7 +271,19 @@ def create_member(user_id, chat_id):
         """
         INSERT INTO members (user_id, chat_id)
         VALUES (%(user_id)s, %(chat_id)s)
-        RETURNING member_id;
+        RETURNING member_id
+        """, user_id=int(user_id), chat_id=int(chat_id)
+    )
+
+
+def delete_member(user_id, chat_id):
+    return db.query_one(
+        """
+        DELETE
+        FROM members
+        WHERE user_id = %(user_id)s
+        AND chat_id = %(chat_id)s
+        RETURNING member_id
         """, user_id=int(user_id), chat_id=int(chat_id)
     )
 
@@ -215,20 +300,20 @@ def get_attachment(attachment_id):
     )
 
 
-# TODO: протестировать
-def create_attachment(user_id, chat_id, message_id, url, mime_type):
+def create_attachment(user_id, chat_id, content):
+    url = save_file(filename=content, content=content)
+    mime_type = get_mime_type(url)
     attachment_id = db.query_one(
         """
         INSERT INTO attachments (user_id, chat_id, message_id, mime_type, url)
-        VALUES (%(user_id)s, %(chat_id)s, %(message_id)s, %(mime_type)s, %(url)s)
+        VALUES (%(user_id)s, %(chat_id)s, DEFAULT, %(mime_type)s, %(url)s)
         RETURNING attachment_id;
-        """, user_id=int(user_id), chat_id=int(chat_id), message_id=int(message_id),
+        """, user_id=int(user_id), chat_id=int(chat_id),
         mime_type=str(mime_type), url=str(url)
-    )
+    )['attachment_id']
     return attachment_id
 
 
-# TODO: протестировать
 def save_file(filename, content):
     url = '/'.join([Config.UPLOAD_FOLDER, filename])
     with open(url, 'w') as file:
@@ -236,11 +321,7 @@ def save_file(filename, content):
     return url
 
 
-# TODO: протестировать
 def upload_file(user_id, chat_id, content):
-    message_id = create_message(user_id=user_id, chat_id=chat_id, content=content)
-    url = save_file(filename=message_id, content=content)
-    mime_type = get_mime_type(url)
-    attachment_id = create_attachment(user_id=user_id, chat_id=chat_id,
-                                      message_id=message_id, url=url, mime_type=mime_type)
-    return attachment_id
+    attachment_id = create_attachment(user_id=user_id, chat_id=chat_id, content=content)['attachment_id']
+    attachment = get_attachment(attachment_id=attachment_id)
+    return attachment

@@ -9,7 +9,7 @@ import boto3
 
 # Define application
 app = Flask(__name__, instance_relative_config=True)
-jsonrpc = JSONRPC(app, '/api/')
+jsonrpc = JSONRPC(app, '/api')
 
 # s3_session = boto3.session.Session()
 # s3_client = s3_session.client(service_name=Config.S3_SERVICE_NAME, endpoint_url=Config.S3_ENDPOINT_URL,
@@ -24,15 +24,11 @@ app.config.from_pyfile('config.py', silent=True)
 # Import model
 from .model import *
 
-# Import database
-from app import db
-
-with app.app_context():
-    db.init_db()
-
-    print(list_chats())
-
 # Import views
-# from .views import *
+from .views import *
 
-exit()
+# # Import database
+# from app import db
+#
+# with app.app_context():
+#     db.init_db()
