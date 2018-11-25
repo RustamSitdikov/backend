@@ -1,22 +1,31 @@
+#!/usr/bin/env python
+
 import json
 import unittest
-import testing.postgresql
-import psycopg2
 import jsonlint
 
-from app import app
+from app import app, db
 
-# from flask_jsonrpc.proxy import ServiceProxy
-# server = ServiceProxy('http://localhost:5000/api')
+from flask_jsonrpc.proxy import ServiceProxy
+service = ServiceProxy('http://localhost:5000/api')
 
 
 class AppTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        app.config.from_object('config.TestingConfig')
+
+    @classmethod
+    def tearDownClass(cls):
+        pass
+
     def setUp(self):
         self.app = app.test_client()
-        self.postgresql = testing.postgresql.Postgresql()
+        db.create_all()
 
     def tearDown(self):
-        self.postgresql.stop()
+        db.drop_all()
+        pass
 
     def test_index(self):
         rv = self.app.post('/api/', data=dict(jsonrpc='2.0', method='index', params=[], id='1'))

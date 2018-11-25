@@ -7,7 +7,7 @@ from contextlib import closing
 from functools import wraps
 import logging
 import os
-from config import Config
+from app import app
 
 DB_CONNECTION = "dbconnection"
 
@@ -15,9 +15,9 @@ DB_CONNECTION = "dbconnection"
 def connection():
     if not hasattr(flask.g, DB_CONNECTION):
         flask.g.dbconnection = psycopg2.connect(
-            database=Config.DATABASE_NAME,
-            user=Config.DATABASE_USER, password=Config.DATABASE_PASSWORD,
-            host=Config.DATABASE_HOST
+            database=app.config['DATABASE_NAME'],
+            user=app.config['DATABASE_USER'], password=app.config['DATABASE_PASSWORD'],
+            host=app.config['DATABASE_HOST']
         )
     return flask.g.dbconnection
 
@@ -80,19 +80,21 @@ def transaction(func):
     return inner
 
 
-def call_db(filename):
-    execute(open(os.path.join(Config.SQL_FOLDER, filename), mode='r').read())
+def call(filename):
+    execute(open(os.path.join(app.config['SQL_FOLDER'], filename), mode='r').read())
     commit()
 
 
-def init_db():
-    # Schema creating
-    call_db('000_schema.sql')
+def create_all():
+    with app.app_context():
+        # Schema creating
+        call('000_schema.sql')
 
-    # Data adding
-    call_db('001_add_data.sql')
+        # Data adding
+        call('001_add_data.sql')
 
 
-def close_db():
-    call_db('003_delete_data.sql')
-    close()
+def drop_all():
+    with app.app_context():
+        call('002_delete_data.sql')
+        close()

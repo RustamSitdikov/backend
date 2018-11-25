@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 
-from app import db
+from app import app, db
 from .db import transaction
 from .utils import get_mime_type
-from config import Config
 
 LIMIT = 10
 
@@ -300,9 +299,7 @@ def get_attachment(attachment_id):
     )
 
 
-def create_attachment(user_id, chat_id, content):
-    url = save_file(filename=content, content=content)
-    mime_type = get_mime_type(url)
+def create_attachment(user_id, chat_id, url, mime_type):
     attachment_id = db.query_one(
         """
         INSERT INTO attachments (user_id, chat_id, message_id, mime_type, url)
@@ -314,14 +311,7 @@ def create_attachment(user_id, chat_id, content):
     return attachment_id
 
 
-def save_file(filename, content):
-    url = '/'.join([Config.UPLOAD_FOLDER, filename])
-    with open(url, 'w') as file:
-        file.write(content)
-    return url
-
-
-def upload_file(user_id, chat_id, content):
-    attachment_id = create_attachment(user_id=user_id, chat_id=chat_id, content=content)['attachment_id']
+def upload_file(user_id, chat_id, url, mime_type):
+    attachment_id = create_attachment(user_id=user_id, chat_id=chat_id, url=url, mime_type=mime_type)['attachment_id']
     attachment = get_attachment(attachment_id=attachment_id)
     return attachment

@@ -1,0 +1,55 @@
+
+server {
+	listen 80;
+	listen [::]:80;
+
+	server_name backend;
+
+	root /home/fenya/backend;
+
+	proxy_cache all;
+        # Кешировать указанные коды ответов 5 минут
+        proxy_cache_valid 200 301 302 304 10m;
+        # Кешировать ошибки 1 минуту
+        proxy_cache_valid 404 502 503 1m;
+
+	location / {
+	}
+
+	location /api/ {
+		proxy_pass         http://127.0.0.1:5000/api/;
+        proxy_redirect     off;
+        proxy_set_header   Host $host;
+        proxy_set_header   X-Real-IP $remote_addr;
+        proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Host $server_name;
+    }
+
+	location /public/ {
+		internal;
+		alias /home/fenya/backend/public;
+	}
+
+	location /s3/ {
+		internal;
+		proxy_http_version 1.1;
+		proxy_intercept_errors on;
+		rewrite /s3/(.*) /$1 break;
+		proxy_pass https://upload_files.hb.bizmrg.com
+	}
+
+	location /protected/ {
+        set $s3_bucket 'upload_file';
+        set $aws_access_key 'aajjK5UbPHYrTxo618EXLp';
+        set $aws_secret_key 'd4SRR4d6HeL9MbxRxBAPQE78uwus5k2BFhSGr5FBLwWB';
+        set $url_full         "$1";
+        set $string_to_sign   "$request_method\n\n\n\nx-amz-date:${now}\n/$bucket/$url_full";
+        set_hmac_sha1          $aws_signature $aws_secret $string_to_sign;
+        set_encode_base64      $aws_signature $aws_signature;
+
+        proxy_http_version     1.1;
+        proxy_set_header       Connection "";
+        proxy_set_header       authorization "AWS $aws_access:$aws_signature";
+        proxy_set_header       Host "https://${s3_bucket}.hb.bizmrg.com";
+	}
+}
