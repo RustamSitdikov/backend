@@ -38,7 +38,8 @@ server {
 		proxy_pass https://upload_files.hb.bizmrg.com
 	}
 
-	location /protected/ {
+	location /s3/(.*) {
+	    internal;
         set $s3_bucket 'upload_file';
         set $aws_access_key 'aajjK5UbPHYrTxo618EXLp';
         set $aws_secret_key 'd4SRR4d6HeL9MbxRxBAPQE78uwus5k2BFhSGr5FBLwWB';
@@ -51,5 +52,11 @@ server {
         proxy_set_header       Connection "";
         proxy_set_header       authorization "AWS $aws_access:$aws_signature";
         proxy_set_header       Host "https://${s3_bucket}.hb.bizmrg.com";
+	    proxy_pass https://upload_files.hb.bizmrg.com/$1;
+
 	}
+
+	# /s3_pub/?attach_id=123
+	302
+	X-Accel-Redirect: /s3/
 }

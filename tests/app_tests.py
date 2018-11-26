@@ -17,7 +17,7 @@ class AppTest(unittest.TestCase):
 
     def setUp(self):
         self.app = app.test_client()
-        self.service = service = ServiceProxy('http://localhost:5000/api')
+        self.service = ServiceProxy('http://localhost:5000/api')
         db.create_all()
 
     def tearDown(self):
@@ -58,12 +58,38 @@ class AppTest(unittest.TestCase):
         attachnment_id = None
 
         rv = self.service.api.send_message(user_id=user_id, chat_id=chat_id, content=content, attachment_id=attachnment_id)
+        result = rv['result']
+        self.assertEqual(content, result['content'])
 
     def test_read_message(self):
-        pass
+        user_id = 1
+        chat_id = 1
+        content = 'Hi'
+        attachnment_id = None
+
+        rv = self.service.api.send_message(user_id=user_id, chat_id=chat_id, content=content, attachment_id=attachnment_id)
+        message_id = rv['result']['message_id']
+
+        rv = self.service.api.read_message(user_id=user_id, message_id=message_id)
+        result = rv['result']
+
+        self.assertEqual(content, result['last_message'])
+        self.assertEqual(chat_id, result['chat_id'])
 
     def test_list_messages(self):
-        pass
+        user_ids = [1, 2]
+        chat_id = 1
+        contents = ['Hi', 'Hello']
+        attachnment_id = None
+
+        for (user_id, content) in zip(user_ids, contents):
+            rv = self.service.api.send_message(user_id=user_id, chat_id=chat_id, content=content, attachment_id=attachnment_id)
+
+        rv = self.service.api.list_messages(chat_id=chat_id)
+        results = rv['result']
+        for i, result in enumerate(results):
+            self.assertEqual(user_ids[i], result['user_id'])
+            self.assertEqual(contents[i], result['content'])
 
     def test_upload_file(self):
         pass

@@ -65,24 +65,24 @@ def rollback():
 
 def transaction(func):
     @wraps(func)
-    def inner(*args, **kwargs):
+    def wrap(*args, **kwargs):
         result = None
         try:
             result = func(*args, **kwargs)
-        except Exception as exception:
+        except Exception as ignored:
             rollback()
-            logging.getLogger('sql').error("%s: %s" % (exception.__class__.__name__, exception))
         else:
             commit()
         finally:
             close()
         return result
-    return inner
+    return wrap
 
 
 def call(filename):
-    execute(open(os.path.join(app.config['SQL_FOLDER'], filename), mode='r').read())
-    commit()
+    with open(os.path.join(app.config['SQL_FOLDER'], filename),  mode='r') as file:
+        execute(file.read())
+        commit()
 
 
 def create_all():

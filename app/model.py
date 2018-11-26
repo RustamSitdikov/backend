@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
 from app import app, db
-from .db import transaction
-from .utils import get_mime_type
 
 LIMIT = 10
 
@@ -52,15 +50,15 @@ def get_chat(chat_id):
     )
 
 
-def get_personal_chat(user_id):
+def get_personal_chat(companion_id):
     return db.query_one(
         """
         SELECT chats.chat_id as chat_id, chats.topic as topic, chats.is_group_chat as is_group_chat, chats.last_message as last_message
         FROM chats, members
         WHERE chats.chat_id = members.chat_id
-        AND members.user_id = %(user_id)s
+        AND members.user_id = %(companion_id)s
         AND chats.is_group_chat = FALSE
-        """, user_id=int(user_id)
+        """, user_id=int(companion_id)
     )
 
 
@@ -107,26 +105,23 @@ def create_chat(is_group_chat, topic):
     )
 
 
-@transaction
-def create_personal_chat(user_id, companion_id):
+def create_personal_chat(companion_id, user_id):
     user_name = get_user(user_id=user_id)['name']
     companion_name = get_user(user_id=companion_id)['name']
     topic = '<->'.join([user_name, companion_name])
     chat_id = create_chat(is_group_chat=False, topic=topic)['chat_id']
-    member_id = create_member(user_id=user_id, chat_id=chat_id)['member_id']
-    member_id = create_member(user_id=companion_id, chat_id=chat_id)['member_id']
+    create_member(user_id=user_id, chat_id=chat_id)
+    create_member(user_id=companion_id, chat_id=chat_id)
     chat = get_chat(chat_id=chat_id)
     return chat
 
 
-@transaction
 def create_group_chat(topic):
     chat_id = create_chat(is_group_chat=True, topic=topic)['chat_id']
     chat = get_chat(chat_id=chat_id)
     return chat
 
 
-@transaction
 def add_members_to_group_chat(chat_id, user_ids):
     member_ids = []
     for user_id in user_ids:
@@ -135,7 +130,6 @@ def add_members_to_group_chat(chat_id, user_ids):
     return member_ids
 
 
-@transaction
 def leave_group_chat(chat_id, user_id):
     member_id = delete_member(user_id=user_id, chat_id=chat_id)['member_id']
     return member_id
@@ -171,7 +165,7 @@ def list_messages(chat_id, limit):
         FROM messages
         JOIN users USING (user_id)
         WHERE chat_id = %(chat_id)s
-        ORDER BY added_at DESC
+        ORDER BY added_at ASC
         LIMIT %(limit)s
         """, chat_id=int(chat_id), limit=int(limit))
 
@@ -225,24 +219,20 @@ def set_last_read_message(member_id, message_id):
     )
 
 
-@transaction
 def read_message(user_id, message_id):
     message = get_message(message_id)
     chat_id = message["chat_id"]
     member_id = decrease_message(user_id=user_id, chat_id=chat_id)['member_id']
-    last_read_message_id = set_last_read_message(member_id=member_id, message_id=message_id)['last_read_message_id']
-
-    # TODO: decrease id for last_read_message_id in member
+    set_last_read_message(member_id=member_id, message_id=message_id)
 
     chat = get_chat(chat_id=chat_id)
     return chat
 
 
-@transaction
 def send_message(user_id, chat_id, content, attachment_id=None):
     message_id = create_message(user_id=user_id, chat_id=chat_id, content=content)['message_id']
-    member_id = increase_message(user_id=user_id, chat_id=chat_id)['member_id']
-    last_message = set_last_message(chat_id=chat_id, content=content)['last_message']
+    increase_message(user_id=user_id, chat_id=chat_id)
+    set_last_message(chat_id=chat_id, content=content)
 
     # TODO: need to add attachment file
     if attachment_id is not None:
