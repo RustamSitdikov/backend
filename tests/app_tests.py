@@ -2,12 +2,8 @@
 
 import json
 import unittest
-import jsonlint
-
 from app import app, db
-
 from flask_jsonrpc.proxy import ServiceProxy
-service = ServiceProxy('http://localhost:5000/api')
 
 
 class AppTest(unittest.TestCase):
@@ -21,6 +17,7 @@ class AppTest(unittest.TestCase):
 
     def setUp(self):
         self.app = app.test_client()
+        self.service = service = ServiceProxy('http://localhost:5000/api')
         db.create_all()
 
     def tearDown(self):
@@ -28,8 +25,7 @@ class AppTest(unittest.TestCase):
         pass
 
     def test_index(self):
-        rv = self.app.post('/api/', data=dict(jsonrpc='2.0', method='index', params=[], id='1'))
-        print(rv)
+        pass
 
     def test_login(self):
         pass
@@ -56,32 +52,15 @@ class AppTest(unittest.TestCase):
         pass
 
     def test_send_message(self):
+        user_id = 1
         chat_id = 1
-        content = "content"
-        attach_id = 2
+        content = 'Hi'
+        attachnment_id = None
 
-        rv = self.app.get('/send_message?chat_id={}&content={}&attach_id={}'.format(chat_id, content, attach_id))
-        self.assertEqual(405, rv.status_code)
-
-        message = "Message"
-        rv = self.app.post('/send_message?chat_id={}&content={}&attach_id={}'.format(chat_id, content, attach_id), data=dict(message=message))
-        data = json.loads(rv.get_data(as_text=True))
-        self.assertEqual(data["message"], message)
-        self.assertEqual(200, rv.status_code)
-        self.assertEqual('application/json', rv.mimetype)
+        rv = self.service.api.send_message(user_id=user_id, chat_id=chat_id, content=content, attachment_id=attachnment_id)
 
     def test_read_message(self):
-        message_id = 1
-        chat = "Chat"
-
-        rv = self.app.get('/read_message?message_id={}'.format(message_id))
-        data = json.loads(rv.get_data(as_text=True))
-        self.assertEqual(data["chat"], chat)
-        self.assertEqual(200, rv.status_code)
-        self.assertEqual('application/json', rv.mimetype)
-
-        rv = self.app.post('/read_message?message_id={}'.format(message_id), data=dict(chat=chat))
-        self.assertEqual(405, rv.status_code)
+        pass
 
     def test_list_messages(self):
         pass
