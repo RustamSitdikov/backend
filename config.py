@@ -24,6 +24,16 @@ class Config(object):
     S3_ACCESS_KEY_ID = 'aajjK5UbPHYrTxo618EXLp'
     S3_SECRET_ACCESS_KEY = 'd4SRR4d6HeL9MbxRxBAPQE78uwus5k2BFhSGr5FBLwWB'
 
+    # Flask
+    SECRET_KEY = 'secret'
+
+    # Oauth
+    GITHUB_CLIENT_ID = ''
+    GITHUB_CLIENT_SECRET = ''
+
+    # Cent
+    FLASK_CENT_SECRET = 'secret'
+
     # Path
     ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
     SQL_FOLDER = os.path.join(ROOT_PATH, 'sql')

@@ -12,14 +12,19 @@ import hashlib
 import time
 
 
-@jsonrpc.method('api.index')
-def index():
-    return jsonify().json
+# @app.route('/')
+# def index():
+#     cent.publish("my_channel_id", key1='value1', key2='value2')
 
 
-@jsonrpc.method('api.login')
-def login():
-    return jsonify().json
+# @jsonrpc.method('api.index')
+# def index():
+#     return jsonify().json
+
+
+# @jsonrpc.method('api.login')
+# def login():
+#     return jsonify().json
 
 
 @jsonrpc.method('api.search_users')
