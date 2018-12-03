@@ -3,6 +3,9 @@
 from flask import Flask
 from flask_jsonrpc import JSONRPC
 import boto3
+import os
+
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = "1"
 
 # Define application
 app = Flask(__name__, instance_relative_config=True)

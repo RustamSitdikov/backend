@@ -3,71 +3,133 @@
 from . import app
 from flask import g, session, request, url_for, flash, jsonify, redirect
 from flask_oauthlib.client import OAuth
+from requests_oauthlib import OAuth2Session
+import os
 
-oauth = OAuth(app)
-
-github = oauth.remote_app(
-    'github',
-    app_key='backend',
-    consumer_key='4db1ce1afb2316bb26d8',
-    consumer_secret='e864229acc081cd628af908b9fba28928659c4b7',
-    request_token_params={'scope': 'user:email'},
-    base_url='https://api.github.com/',
-    request_token_url=None,
-    access_token_method='POST',
-    access_token_url='https://github.com/login/oauth/access_token',
-    authorize_url='https://github.com/login/oauth/authorize'
-
-)
+client_id = "4db1ce1afb2316bb26d8"
+client_secret = "e864229acc081cd628af908b9fba28928659c4b7"
+authorization_base_url = 'https://github.com/login/oauth/authorize'
+token_url = 'https://github.com/login/oauth/access_token'
 
 
-@github.tokengetter
-def get_github_token():
-    if 'github_oauth' in session:
-        resp = session['github_oauth']
-        return resp['oauth_token'], resp['oauth_token_secret']
-
-
-@app.before_request
-def before_request():
-    g.user = None
-    if 'github_oauth' in session:
-        g.user = session['github_oauth']
-
-
-@app.route('/')
+@app.route("/")
 def index():
-    if 'github_token' in session:
-        me = github.get('user')
-        return jsonify(me.data)
-    return redirect(url_for('login'))
+    github = OAuth2Session(client_id)
+    authorization_url, state = github.authorization_url(authorization_base_url)
+
+    session['oauth_state'] = state
+    return redirect(authorization_url)
 
 
-@app.route('/login')
-def login():
-    callback_url = url_for('authorized', next=request.args.get('next'))
-    return github.authorize(callback=callback_url or request.referrer or None)
+@app.route("/callback", methods=["GET"])
+def callback():
+    github = OAuth2Session(client_id, state=session['oauth_state'])
+    token = github.fetch_token(token_url, client_secret=client_secret, authorization_response=request.url)
+
+    session['oauth_token'] = token
+
+    return redirect(url_for('.user'))
 
 
-@app.route('/logout')
-def logout():
-    session.pop('github_oauth', None)
-    return redirect(url_for('index'))
+@app.route("/user", methods=["GET"])
+def user():
+    github = OAuth2Session(client_id, token=session['oauth_token'])
+    return jsonify(github.get('https://api.github.com/user').json())
 
 
-@app.route('/authorized')
-def authorized():
-    resp = github.authorized_response()
-    if resp is None or resp.get('access_token') is None:
-        return 'Access denied: reason=%s error=%s resp=%s' % (
-            request.args['error'],
-            request.args['error_description'],
-            resp
-        )
-    session['github_token'] = (resp['access_token'], '')
-    me = github.get('user')
-    print(me)
-    return jsonify(me.data)
+# {
+#   "avatar_url": "https://avatars2.githubusercontent.com/u/45543197?v=4",
+#   "bio": null,
+#   "blog": "",
+#   "company": null,
+#   "created_at": "2018-12-02T20:34:24Z",
+#   "email": null,
+#   "events_url": "https://api.github.com/users/cryptoshazam/events{/privacy}",
+#   "followers": 0,
+#   "followers_url": "https://api.github.com/users/cryptoshazam/followers",
+#   "following": 0,
+#   "following_url": "https://api.github.com/users/cryptoshazam/following{/other_user}",
+#   "gists_url": "https://api.github.com/users/cryptoshazam/gists{/gist_id}",
+#   "gravatar_id": "",
+#   "hireable": null,
+#   "html_url": "https://github.com/cryptoshazam",
+#   "id": 45543197,
+#   "location": null,
+#   "login": "cryptoshazam",
+#   "name": null,
+#   "node_id": "MDQ6VXNlcjQ1NTQzMTk3",
+#   "organizations_url": "https://api.github.com/users/cryptoshazam/orgs",
+#   "public_gists": 0,
+#   "public_repos": 0,
+#   "received_events_url": "https://api.github.com/users/cryptoshazam/received_events",
+#   "repos_url": "https://api.github.com/users/cryptoshazam/repos",
+#   "site_admin": false,
+#   "starred_url": "https://api.github.com/users/cryptoshazam/starred{/owner}{/repo}",
+#   "subscriptions_url": "https://api.github.com/users/cryptoshazam/subscriptions",
+#   "type": "User",
+#   "updated_at": "2018-12-03T10:27:26Z",
+#   "url": "https://api.github.com/users/cryptoshazam"
+# }
+
+
+
+
+
+# if __name__ == "__main__":
+#     # This allows us to use a plain HTTP callback
+#     os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = "1"
+#
+#     app.secret_key = os.urandom(24)
+#     app.run(debug=True)
+
+
+# @github.tokengetter
+# def get_github_token():
+#     if 'github_oauth' in session:
+#         resp = session['github_oauth']
+#         return resp['oauth_token'], resp['oauth_token_secret']
+#
+#
+# @app.before_request
+# def before_request():
+#     g.user = None
+#     if 'github_oauth' in session:
+#         g.user = session['github_oauth']
+#
+#
+# @app.route('/')
+# def index():
+#     if 'github_token' in session:
+#         me = github.get('user')
+#         return jsonify(me.data)
+#     return redirect(url_for('login'))
+#
+#
+# @app.route('/login')
+# def login():
+#     callback_url = url_for('authorized', next=request.args.get('next'))
+#     return github.authorize(callback=callback_url or request.referrer or None)
+#
+#
+# @app.route('/logout')
+# def logout():
+#     session.pop('github_oauth', None)
+#     return redirect(url_for('index'))
+#
+#
+# @app.route('/authorized')
+# def authorized():
+#     resp = github.authorized_response()
+#     if resp is None or resp.get('access_token') is None:
+#         return 'Access denied: reason=%s error=%s resp=%s' % (
+#             request.args['error'],
+#             request.args['error_description'],
+#             resp
+#         )
+#     session['github_token'] = (resp['access_token'], '')
+#     me = github.get('user')
+#     print(me)
+#     return jsonify(me.data)
 
 
 # # Credentials you get from registering a new application
