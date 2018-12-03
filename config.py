@@ -28,8 +28,6 @@ class Config(object):
     SECRET_KEY = 'secret'
 
     # Oauth
-    GITHUB_CLIENT_ID = ''
-    GITHUB_CLIENT_SECRET = ''
 
     # Cent
     FLASK_CENT_SECRET = 'secret'

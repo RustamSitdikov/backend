@@ -24,7 +24,7 @@ s3_client = s3_session.client(service_name=app.config['S3_SERVICE_NAME'],
 jsonrpc = JSONRPC(app, '/api')
 
 # Import oauth
-from .auth import oauth
+from .auth import *
 
 # Import cent
 # from .cent import cent
