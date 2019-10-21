@@ -44,6 +44,6 @@ toredis-fork==0.1.4
 tornado==4.2.1
 toro==0.8
 urllib3==1.24.1
-Werkzeug==0.14.1
+Werkzeug==0.15.3
 wrapt==1.8.0
 WTForms==2.2.1
