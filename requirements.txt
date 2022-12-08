@@ -7,7 +7,7 @@ blinker==1.4
 botocore==1.12.50
 cent==3.0.0
 centrifuge==0.8.4
-certifi==2018.10.15
+certifi==2022.12.7
 cffi==1.11.5
 chardet==3.0.4
 Click==7.0
